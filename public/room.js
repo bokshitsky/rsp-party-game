@@ -147,13 +147,12 @@
       </section>`;
   }
 
+  // Сервер присылает фигуры только до решающей включительно — рисуем всё, что пришло.
   function renderStrip(steps, side, decidedAt) {
     return steps.map((step, i) => {
-      const classes = ['cell'];
-      if (decidedAt !== null && i === decidedAt) classes.push('decider');
-      if (decidedAt !== null && i > decidedAt) classes.push('after');
+      const decider = decidedAt !== null && i === decidedAt ? ' decider' : '';
       const move = step[side];
-      return `<div class="${classes.join(' ')}" title="${LABELS[move]}">${shapeHtml(move)}</div>`;
+      return `<div class="cell${decider}" title="${LABELS[move]}">${shapeHtml(move)}</div>`;
     }).join('');
   }
 

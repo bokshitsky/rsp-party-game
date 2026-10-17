@@ -87,6 +87,8 @@ function join(room, sid, rawName, moves) {
 }
 
 // Сравниваем фигуры по порядку: решает первая несовпавшая пара.
+// На ней и останавливаемся — фигуры, до которых не дошли, не попадают
+// в ответ вовсе: иначе были бы видны ходы на следующие раунды.
 function duel(a, b) {
   const steps = [];
   let winner = null;
@@ -98,9 +100,10 @@ function duel(a, b) {
     const result = moveA === moveB ? 'tie' : (BEATS[moveA] === moveB ? 'a' : 'b');
     steps.push({ a: moveA, b: moveB, result });
 
-    if (result !== 'tie' && winner === null) {
+    if (result !== 'tie') {
       winner = result === 'a' ? a : b;
       decidedAt = i;
+      break;
     }
   }
 

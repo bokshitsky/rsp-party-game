@@ -397,8 +397,6 @@ input[type='text']:focus {
   border-width: 2px;
 }
 
-.cell.after { opacity: 0.22; }
-
 .cell.decider::after {
   content: '';
   position: absolute;
