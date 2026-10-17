@@ -64,14 +64,27 @@
         <div class="btn-row hidden" id="admin-bar" style="margin-top:18px">
           <button class="btn btn-primary" id="admin-action" type="button"></button>
         </div>
+        <p class="hint hidden" id="watch-note" style="margin-top:14px">
+          Это ссылка только для просмотра: отсюда нельзя ни играть, ни вести игру.
+        </p>
         <div class="error hidden" id="error"></div>
       </section>
 
       <section class="block hidden" id="invite-block">
-        <div class="block-title">Ссылка для остальных</div>
-        <div class="invite">
-          <code id="invite-link"></code>
-          <button class="btn" id="copy" type="button">Скопировать</button>
+        <div class="block-title">Ссылки</div>
+        <div class="hidden" id="invite-players">
+          <div class="invite-label">Для игроков</div>
+          <div class="invite">
+            <code id="invite-link"></code>
+            <button class="btn" id="copy" type="button">Скопировать</button>
+          </div>
+        </div>
+        <div class="hidden" id="invite-watch" style="margin-top:18px">
+          <div class="invite-label">Только смотреть — например, вывести на экран</div>
+          <div class="invite">
+            <code id="watch-link"></code>
+            <button class="btn" id="copy-watch" type="button">Скопировать</button>
+          </div>
         </div>
       </section>
 
@@ -86,7 +99,7 @@
 
       <div class="footnote">
         <span id="me">—</span>
-        <button class="link-btn" id="switch-user" type="button">Сменить игрока</button>
+        <button class="link-btn hidden" id="switch-user" type="button">Сменить игрока</button>
       </div>
     </div>
   </div>

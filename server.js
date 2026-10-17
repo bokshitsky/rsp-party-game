@@ -10,7 +10,8 @@ const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const COOKIE_NAME = 'rsp_sid';
 const COOKIE_MAX_AGE = 12 * 60 * 60; // 12 часов — на один вечер хватает
-const ROOM_PATH = /^\/room\/([A-Za-z0-9]{4,12})\/?$/;
+// /room/<код> — играем, /room/<код>/watch — только смотрим
+const ROOM_PATH = /^\/room\/[A-Za-z0-9]{4,12}(\/watch)?\/?$/;
 
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',

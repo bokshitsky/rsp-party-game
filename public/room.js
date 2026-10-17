@@ -5,13 +5,17 @@
   const POLL_MS = 3000;
   const MOVE_COUNT = 10;
   const MOVES = ['rock', 'paper', 'scissors'];
-  const CODE = location.pathname.split('/').filter(Boolean)[1].toUpperCase();
+  const SEGMENTS = location.pathname.split('/').filter(Boolean); // ['room', код, 'watch'?]
+  const CODE = SEGMENTS[1].toUpperCase();
+  // /room/<код>/watch — только смотрим: ни войти в игру, ни вести её отсюда нельзя.
+  const WATCHING = SEGMENTS[2] === 'watch';
   const API = `/api/rooms/${encodeURIComponent(CODE)}`;
 
   const els = {};
   for (const id of ['missing', 'join-view', 'room-view', 'name', 'slots', 'submit', 'undo',
     'clear', 'random', 'join-error', 'status-title', 'status-text', 'admin-bar', 'admin-action',
-    'error', 'invite-block', 'invite-link', 'copy', 'players', 'player-count', 'pending',
+    'watch-note', 'error', 'invite-block', 'invite-players', 'invite-link', 'copy',
+    'invite-watch', 'watch-link', 'copy-watch', 'players', 'player-count', 'pending',
     'rounds', 'champion', 'me', 'switch-user']) {
     els[id] = document.getElementById(id);
   }
@@ -191,28 +195,36 @@
   function render(state) {
     latest = state;
     const info = STATUS[state.phase];
-    const canJoin = state.phase === 'lobby' && !state.you.joined;
+    const canJoin = state.phase === 'lobby' && !state.you.joined && !WATCHING;
 
     show(els.missing, false);
     show(els['room-view'], true);
     show(els['join-view'], canJoin);
     if (canJoin) renderPicker();
 
-    els.me.textContent = state.you.name
-      ? `Ты: ${state.you.name}${state.you.isAdmin ? ' · ведёшь игру' : ''}`
-      : (state.you.isAdmin ? 'Ты ведёшь игру' : 'Наблюдатель');
+    els.me.textContent = WATCHING
+      ? `Режим наблюдателя · комната ${state.code}`
+      : (state.you.name
+        ? `Ты: ${state.you.name}${state.you.isAdmin ? ' · ведёшь игру' : ''}`
+        : (state.you.isAdmin ? 'Ты ведёшь игру' : 'Наблюдатель'));
 
     els['status-title'].textContent = info.title;
     els['status-text'].textContent = state.phase === 'lobby' && state.players.length < 2
       ? 'Нужно минимум два игрока — отправь остальным ссылку ниже.'
       : info.text;
 
-    show(els['admin-bar'], state.you.isAdmin);
+    show(els['admin-bar'], state.you.isAdmin && !WATCHING);
     els['admin-action'].textContent = info.action;
     els['admin-action'].disabled = state.phase === 'lobby' && state.players.length < 2;
 
-    show(els['invite-block'], state.phase === 'lobby');
+    // Ссылка для игроков нужна, пока идёт набор; ссылка на экран — всегда,
+    // но не на самом экране: там по ней уже пришли.
+    const showPlayerLink = state.phase === 'lobby';
+    show(els['invite-players'], showPlayerLink);
+    show(els['invite-watch'], !WATCHING);
+    show(els['invite-block'], showPlayerLink || !WATCHING);
     els['invite-link'].textContent = `${location.origin}/room/${state.code}`;
+    els['watch-link'].textContent = `${location.origin}/room/${state.code}/watch`;
 
     renderPlayers(state);
     renderPending(state);
@@ -265,22 +277,30 @@
     else if (latest) render(latest);
   });
 
-  els.copy.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(els['invite-link'].textContent);
-      els.copy.textContent = 'Скопировано';
-    } catch {
-      // Буфер недоступен (например, по http не на localhost) — ссылка и так на виду.
-      els.copy.textContent = 'Скопируй вручную';
-    }
-    setTimeout(() => { els.copy.textContent = 'Скопировать'; }, 2000);
-  });
+  function wireCopy(button, source) {
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(source.textContent);
+        button.textContent = 'Скопировано';
+      } catch {
+        // Буфер недоступен (например, по http не на localhost) — ссылка и так на виду.
+        button.textContent = 'Скопируй вручную';
+      }
+      setTimeout(() => { button.textContent = 'Скопировать'; }, 2000);
+    });
+  }
+
+  wireCopy(els.copy, els['invite-link']);
+  wireCopy(els['copy-watch'], els['watch-link']);
 
   // Выдаёт новую куку: прежний игрок остаётся в комнате, а мы заходим ещё раз.
   els['switch-user'].addEventListener('click', async () => {
     await fetch('/api/switch', { method: 'POST' });
     location.reload();
   });
+
+  show(els['watch-note'], WATCHING);
+  show(els['switch-user'], !WATCHING);
 
   poll();
   setInterval(poll, POLL_MS);

@@ -470,6 +470,13 @@ input[type='text']:focus {
 }
 
 /* Ссылка-приглашение */
+.invite-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  opacity: 0.6;
+  margin-bottom: 8px;
+}
+
 .invite {
   display: flex;
   flex-wrap: wrap;
