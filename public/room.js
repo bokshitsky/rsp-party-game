@@ -276,16 +276,49 @@
     else if (latest) render(latest);
   });
 
+  // Выделяет текст ссылки прямо на странице — тогда её можно забрать руками.
+  function selectText(node) {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  // navigator.clipboard браузеры дают только по https и на localhost.
+  // По http (а игра живёт именно так) остаётся старый execCommand.
+  async function copyText(text, node) {
+    if (window.isSecureContext && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.cssText = 'position:fixed;top:0;left:-9999px;font-size:16px';
+    document.body.appendChild(area);
+    area.select();
+    area.setSelectionRange(0, text.length);
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } finally {
+      area.remove();
+    }
+    if (!ok) selectText(node);
+    return ok;
+  }
+
   function wireCopy(button, source) {
     button.addEventListener('click', async () => {
+      let ok = false;
       try {
-        await navigator.clipboard.writeText(source.textContent);
-        button.textContent = 'Скопировано';
+        ok = await copyText(source.textContent, source);
       } catch {
-        // Буфер недоступен (например, по http не на localhost) — ссылка и так на виду.
-        button.textContent = 'Скопируй вручную';
+        selectText(source);
       }
-      setTimeout(() => { button.textContent = 'Скопировать'; }, 2000);
+      button.textContent = ok ? 'Скопировано' : 'Выделил — жми Ctrl+C';
+      setTimeout(() => { button.textContent = 'Скопировать'; }, 2500);
     });
   }
 
