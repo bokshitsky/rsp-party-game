@@ -17,26 +17,77 @@
       <div class="masthead-marks"><i></i><i></i><i></i></div>
     </header>
 
-    <section class="block" id="status-block">
-      <div class="block-title" id="status-title">Загрузка</div>
-      <p class="hint" id="status-text"></p>
-      <div class="btn-row hidden" id="admin-bar" style="margin-top:18px">
-        <button class="btn btn-primary" id="admin-action" type="button"></button>
+    <!-- Комнаты нет или она уже исчезла -->
+    <section class="block hidden" id="missing">
+      <div class="block-title">Комната не найдена</div>
+      <p class="hint" style="margin-bottom:18px">
+        Ссылка устарела или сервер перезапускали — комнаты живут только пока он работает.
+      </p>
+      <a class="btn" href="/">Создать новую</a>
+    </section>
+
+    <!-- Выбор имени и фигур: виден, пока ты не в игре -->
+    <section class="block hidden" id="join-view">
+      <div class="block-title">01 · Имя</div>
+      <input id="name" type="text" placeholder="Как тебя звать" maxlength="24" autocomplete="off">
+
+      <div class="block-title" style="margin-top:28px">02 · Десять фигур подряд</div>
+      <div class="slots" id="slots"></div>
+      <div class="picker">
+        <button class="pick" data-move="rock" type="button">
+          <span class="shape shape-rock"></span>Камень
+        </button>
+        <button class="pick" data-move="paper" type="button">
+          <span class="shape shape-paper"></span>Бумага
+        </button>
+        <button class="pick" data-move="scissors" type="button">
+          <svg class="shape shape-scissors" viewBox="0 0 100 100" preserveAspectRatio="none"
+               aria-hidden="true"><polygon points="50,7 95,93 5,93"/></svg>Ножницы
+        </button>
       </div>
-      <div class="error hidden" id="error"></div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn" id="undo" type="button">← Стереть</button>
+        <button class="btn" id="clear" type="button">Сбросить всё</button>
+        <button class="btn" id="random" type="button">Случайно</button>
+      </div>
+      <div style="margin-top:20px">
+        <button class="btn btn-primary" id="submit" type="button" disabled>Выбрал</button>
+      </div>
+      <div class="error hidden" id="join-error"></div>
     </section>
 
-    <section class="block">
-      <div class="block-title">Участники · <span id="player-count">0</span></div>
-      <div class="players" id="players"></div>
-    </section>
+    <!-- Сама комната -->
+    <div class="hidden" id="room-view">
+      <section class="block" id="status-block">
+        <div class="block-title" id="status-title">Загрузка</div>
+        <p class="hint" id="status-text"></p>
+        <div class="btn-row hidden" id="admin-bar" style="margin-top:18px">
+          <button class="btn btn-primary" id="admin-action" type="button"></button>
+        </div>
+        <div class="error hidden" id="error"></div>
+      </section>
 
-    <div id="rounds"></div>
-    <div id="champion"></div>
+      <section class="block hidden" id="invite-block">
+        <div class="block-title">Ссылка для остальных</div>
+        <div class="invite">
+          <code id="invite-link"></code>
+          <button class="btn" id="copy" type="button">Скопировать</button>
+        </div>
+      </section>
 
-    <div class="footnote">
-      <span id="me">—</span>
-      <button class="link-btn" id="switch-user" type="button">Сменить игрока</button>
+      <section class="block">
+        <div class="block-title">Участники · <span id="player-count">0</span></div>
+        <div class="players" id="players"></div>
+      </section>
+
+      <div id="pending"></div>
+      <div id="rounds"></div>
+      <div id="champion"></div>
+
+      <div class="footnote">
+        <span id="me">—</span>
+        <button class="link-btn" id="switch-user" type="button">Сменить игрока</button>
+      </div>
     </div>
   </div>
 

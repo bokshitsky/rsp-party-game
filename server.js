@@ -10,6 +10,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const COOKIE_NAME = 'rsp_sid';
 const COOKIE_MAX_AGE = 12 * 60 * 60; // 12 часов — на один вечер хватает
+const ROOM_PATH = /^\/room\/([A-Za-z0-9]{4,12})\/?$/;
 
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -91,36 +92,61 @@ function serveFile(res, filePath) {
   });
 }
 
+// /api/rooms                 POST   создать комнату
+// /api/rooms/:code           GET    состояние для опроса
+// /api/rooms/:code/join      POST   войти в игру
+// /api/rooms/:code/draw      POST   объявить пары (админ)
+// /api/rooms/:code/round     POST   сыграть объявленные пары (админ)
+// /api/rooms/:code/reset     POST   собрать всех заново (админ)
+// /api/switch                POST   новая кука, чтобы зайти другим игроком
 async function handleApi(req, res, url, sid) {
-  if (url.pathname === '/api/state' && req.method === 'GET') {
-    return sendJson(res, 200, game.publicState(sid));
+  const segments = url.pathname.split('/').filter(Boolean); // ['api', 'rooms', code, action?]
+  const post = req.method === 'POST';
+
+  if (segments[1] === 'switch' && post) {
+    // Прежний игрок остаётся в своей комнате, а мы начинаем с чистого листа.
+    issueSession(res);
+    return sendJson(res, 200, { ok: true });
   }
 
-  if (req.method !== 'POST') throw Object.assign(new Error('Метод не поддержан'), { status: 405 });
-  const body = await readBody(req);
+  if (segments[1] !== 'rooms') throw Object.assign(new Error('Не найдено'), { status: 404 });
 
-  switch (url.pathname) {
-    case '/api/join': {
-      const name = game.join(sid, body.name, body.moves);
-      return sendJson(res, 200, { name });
+  if (segments.length === 2) {
+    if (!post) throw Object.assign(new Error('Метод не поддержан'), { status: 405 });
+    const room = game.createRoom(sid);
+    return sendJson(res, 200, { code: room.code });
+  }
+
+  const room = game.getRoom(segments[2]);
+  const action = segments[3];
+
+  if (!action) {
+    if (req.method !== 'GET') throw Object.assign(new Error('Метод не поддержан'), { status: 405 });
+    return sendJson(res, 200, game.publicState(room, sid));
+  }
+
+  if (!post) throw Object.assign(new Error('Метод не поддержан'), { status: 405 });
+
+  switch (action) {
+    case 'join': {
+      const body = await readBody(req);
+      game.join(room, sid, body.name, body.moves);
+      break;
     }
-    case '/api/round': {
-      game.startRound(sid);
-      return sendJson(res, 200, game.publicState(sid));
-    }
-    case '/api/reset': {
-      game.reset(sid);
-      return sendJson(res, 200, game.publicState(sid));
-    }
-    case '/api/switch': {
-      // Новая кука = чистая личность. Прежний игрок остаётся в игре —
-      // так из одного браузера можно завести ещё одного участника.
-      issueSession(res);
-      return sendJson(res, 200, { ok: true });
-    }
+    case 'draw':
+      game.drawPairs(room, sid);
+      break;
+    case 'round':
+      game.runRound(room, sid);
+      break;
+    case 'reset':
+      game.reset(room, sid);
+      break;
     default:
       throw Object.assign(new Error('Не найдено'), { status: 404 });
   }
+
+  return sendJson(res, 200, game.publicState(room, sid));
 }
 
 const server = http.createServer(async (req, res) => {
@@ -137,7 +163,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === '/') return serveFile(res, path.join(PUBLIC_DIR, 'index.html'));
-  if (url.pathname === '/room') return serveFile(res, path.join(PUBLIC_DIR, 'room.html'));
+  if (ROOM_PATH.test(url.pathname)) return serveFile(res, path.join(PUBLIC_DIR, 'room.html'));
 
   // Защита от выхода за пределы public/.
   const target = path.join(PUBLIC_DIR, path.normalize(url.pathname));
@@ -149,7 +175,8 @@ const server = http.createServer(async (req, res) => {
   serveFile(res, target);
 });
 
+setInterval(() => game.sweep(), 60 * 60 * 1000).unref();
+
 server.listen(PORT, () => {
   console.log(`КАМЕНЬ · НОЖНИЦЫ · БУМАГА → http://localhost:${PORT}`);
-  console.log(`Комната: http://localhost:${PORT}/room   Админ: «${game.ADMIN_NAME}»`);
 });

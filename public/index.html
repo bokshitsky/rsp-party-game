@@ -18,44 +18,15 @@
     </header>
 
     <section class="block">
-      <div class="block-title">01 · Имя</div>
-      <input id="name" type="text" placeholder="Как тебя звать" maxlength="24" autocomplete="off">
-    </section>
-
-    <section class="block">
-      <div class="block-title">02 · Десять фигур подряд</div>
-      <div class="slots" id="slots"></div>
-      <div class="picker">
-        <button class="pick" data-move="rock" type="button">
-          <span class="shape shape-rock"></span>Камень
-        </button>
-        <button class="pick" data-move="paper" type="button">
-          <span class="shape shape-paper"></span>Бумага
-        </button>
-        <button class="pick" data-move="scissors" type="button">
-          <svg class="shape shape-scissors" viewBox="0 0 100 100" preserveAspectRatio="none"
-               aria-hidden="true"><polygon points="50,7 95,93 5,93"/></svg>Ножницы
-        </button>
-      </div>
-      <div class="btn-row" style="margin-top:16px">
-        <button class="btn" id="undo" type="button">← Стереть</button>
-        <button class="btn" id="clear" type="button">Сбросить всё</button>
-        <button class="btn" id="random" type="button">Случайно</button>
-      </div>
-    </section>
-
-    <section class="block">
-      <button class="btn btn-primary" id="submit" type="button" disabled>Выбрал</button>
+      <button class="btn btn-primary" id="create" type="button">Создать комнату</button>
       <div class="error hidden" id="error"></div>
+      <p class="hint" style="margin-top:18px">
+        Тот, кто создал комнату, ведёт игру: объявляет пары и запускает раунды.
+        Остальным нужно просто отправить ссылку на комнату.
+      </p>
     </section>
-
-    <div class="footnote">
-      <span>Выбор нельзя поменять после отправки</span>
-      <span>Комната: /room</span>
-    </div>
   </div>
 
-  <script src="/shapes.js"></script>
-  <script src="/join.js"></script>
+  <script src="/landing.js"></script>
 </body>
 </html>

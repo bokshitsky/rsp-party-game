@@ -3,38 +3,92 @@
 (function () {
   const { shapeHtml, escapeHtml, LABELS } = window.RSP;
   const POLL_MS = 3000;
+  const MOVE_COUNT = 10;
+  const MOVES = ['rock', 'paper', 'scissors'];
+  const CODE = location.pathname.split('/').filter(Boolean)[1].toUpperCase();
+  const API = `/api/rooms/${encodeURIComponent(CODE)}`;
 
-  const els = {
-    statusTitle: document.getElementById('status-title'),
-    statusText: document.getElementById('status-text'),
-    adminBar: document.getElementById('admin-bar'),
-    adminAction: document.getElementById('admin-action'),
-    error: document.getElementById('error'),
-    players: document.getElementById('players'),
-    playerCount: document.getElementById('player-count'),
-    rounds: document.getElementById('rounds'),
-    champion: document.getElementById('champion'),
-    me: document.getElementById('me'),
-    switchUser: document.getElementById('switch-user'),
-  };
+  const els = {};
+  for (const id of ['missing', 'join-view', 'room-view', 'name', 'slots', 'submit', 'undo',
+    'clear', 'random', 'join-error', 'status-title', 'status-text', 'admin-bar', 'admin-action',
+    'error', 'invite-block', 'invite-link', 'copy', 'players', 'player-count', 'pending',
+    'rounds', 'champion', 'me', 'switch-user']) {
+    els[id] = document.getElementById(id);
+  }
 
   let latest = null;
+  let chosen = [];
 
-  function showError(message) {
-    els.error.textContent = message || '';
-    els.error.classList.toggle('hidden', !message);
+  function show(el, visible) {
+    el.classList.toggle('hidden', !visible);
   }
+
+  function setError(el, message) {
+    el.textContent = message || '';
+    show(el, Boolean(message));
+  }
+
+  /* ── Выбор имени и фигур ─────────────────────────── */
+
+  function renderPicker() {
+    els.slots.innerHTML = Array.from({ length: MOVE_COUNT }, (_, i) => (chosen[i]
+      ? `<div class="slot">${shapeHtml(chosen[i])}</div>`
+      : `<div class="slot empty" data-index="${i + 1}"></div>`)).join('');
+
+    const full = chosen.length === MOVE_COUNT;
+    els.submit.disabled = !(full && els.name.value.trim());
+    els.undo.disabled = chosen.length === 0;
+    els.clear.disabled = chosen.length === 0;
+    document.querySelectorAll('.pick').forEach((btn) => { btn.disabled = full; });
+  }
+
+  document.querySelectorAll('.pick').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (chosen.length >= MOVE_COUNT) return;
+      chosen.push(btn.dataset.move);
+      setError(els['join-error'], '');
+      renderPicker();
+    });
+  });
+
+  els.undo.addEventListener('click', () => { chosen.pop(); renderPicker(); });
+  els.clear.addEventListener('click', () => { chosen = []; renderPicker(); });
+  els.random.addEventListener('click', () => {
+    chosen = Array.from({ length: MOVE_COUNT }, () => MOVES[Math.floor(Math.random() * 3)]);
+    setError(els['join-error'], '');
+    renderPicker();
+  });
+  els.name.addEventListener('input', () => { setError(els['join-error'], ''); renderPicker(); });
+
+  els.submit.addEventListener('click', async () => {
+    els.submit.disabled = true;
+    setError(els['join-error'], '');
+    const state = await post('join', { name: els.name.value, moves: chosen }, els['join-error']);
+    if (state) {
+      chosen = [];
+      render(state);
+    } else {
+      renderPicker();
+    }
+  });
+
+  /* ── Комната ─────────────────────────────────────── */
 
   const STATUS = {
     lobby: {
-      title: 'Ждём начала',
-      text: 'Все выбрали фигуры и ждут, пока админ запустит первый раунд.',
-      action: 'Начать игру',
+      title: 'Набор игроков',
+      text: 'Когда все выберут фигуры, админ объявит пары первого раунда.',
+      action: 'Объявить пары',
     },
-    playing: {
-      title: 'Турнир идёт',
-      text: 'Победители пар проходят в следующий раунд.',
-      action: 'Следующий раунд',
+    draw: {
+      title: 'Пары объявлены',
+      text: 'Фигуры пока закрыты. Админ запускает раунд, и все увидят результат.',
+      action: 'Запустить раунд',
+    },
+    revealed: {
+      title: 'Раунд сыгран',
+      text: 'Победители пар идут дальше — админ объявит пары следующего раунда.',
+      action: 'Объявить пары следующего раунда',
     },
     finished: {
       title: 'Игра завершена',
@@ -53,17 +107,40 @@
   }
 
   function renderPlayers(state) {
-    els.playerCount.textContent = state.players.length;
-    if (!state.players.length) {
-      els.players.innerHTML = '<p class="hint">Пока никто не выбрал фигуры.</p>';
+    els['player-count'].textContent = state.players.length;
+    els.players.innerHTML = state.players.length
+      ? state.players.map((name) => {
+        const you = name === state.you.name ? ' is-you' : '';
+        return `<div class="player${you}"><i></i>${escapeHtml(name)}</div>`;
+      }).join('')
+      : '<p class="hint">Пока никто не выбрал фигуры.</p>';
+  }
+
+  // Пары следующего раунда: только имена, фигуры ещё закрыты.
+  function renderPending(state) {
+    const pending = state.pending;
+    if (!pending) {
+      els.pending.innerHTML = '';
       return;
     }
-    els.players.innerHTML = state.players.map((name) => {
-      const classes = ['player'];
-      if (name === state.you.name) classes.push('is-you');
-      if (name.toLowerCase() === state.adminName) classes.push('is-admin');
-      return `<div class="${classes.join(' ')}"><i></i>${escapeHtml(name)}</div>`;
-    }).join('');
+    const pairs = pending.pairs.map((pair) => `
+      <div class="pair">
+        <span class="pair-side">${escapeHtml(pair.a)}</span>
+        <span class="pair-vs">против</span>
+        <span class="pair-side">${escapeHtml(pair.b)}</span>
+      </div>`).join('');
+    const bye = pending.bye
+      ? `<div class="bye">${escapeHtml(pending.bye)} — проходит без боя</div>`
+      : '';
+    const count = pending.pairs.length;
+    els.pending.innerHTML = `
+      <section class="block">
+        <div class="round-label">
+          <span>Раунд ${pending.number} · кто с кем</span>
+          <em>${count} ${plural(count, 'пара', 'пары', 'пар')}${pending.bye ? ' + 1 без боя' : ''}</em>
+        </div>
+        ${pairs}${bye}
+      </section>`;
   }
 
   function renderStrip(steps, side, decidedAt) {
@@ -90,9 +167,8 @@
 
   function renderRounds(state) {
     els.rounds.innerHTML = state.rounds.map((round) => {
-      const matches = round.matches.map(renderMatch).join('');
       const bye = round.bye
-        ? `<div class="bye">${escapeHtml(round.bye)} — проходит без боя</div>`
+        ? `<div class="bye">${escapeHtml(round.bye)} — прошёл без боя</div>`
         : '';
       const count = round.matches.length;
       return `
@@ -101,7 +177,7 @@
             <span>Раунд ${round.number}</span>
             <em>${count} ${plural(count, 'пара', 'пары', 'пар')}${round.bye ? ' + 1 без боя' : ''}</em>
           </div>
-          ${matches}${bye}
+          ${round.matches.map(renderMatch).join('')}${bye}
         </section>`;
     }).join('');
   }
@@ -114,64 +190,96 @@
 
   function render(state) {
     latest = state;
-
-    // Нас тут нет: либо админ сбросил игру, либо мы сменили личность.
-    if (state.phase === 'lobby' && !state.you.joined) {
-      location.replace('/');
-      return;
-    }
-
     const info = STATUS[state.phase];
+    const canJoin = state.phase === 'lobby' && !state.you.joined;
+
+    show(els.missing, false);
+    show(els['room-view'], true);
+    show(els['join-view'], canJoin);
+    if (canJoin) renderPicker();
 
     els.me.textContent = state.you.name
-      ? `Ты: ${state.you.name}${state.you.isAdmin ? ' · админ' : ''}`
-      : 'Наблюдатель';
+      ? `Ты: ${state.you.name}${state.you.isAdmin ? ' · ведёшь игру' : ''}`
+      : (state.you.isAdmin ? 'Ты ведёшь игру' : 'Наблюдатель');
 
-    els.statusTitle.textContent = info.title;
-    els.statusText.textContent = state.phase === 'lobby' && state.players.length < 2
-      ? 'Нужно минимум два игрока. Отправь остальным ссылку на главную страницу.'
+    els['status-title'].textContent = info.title;
+    els['status-text'].textContent = state.phase === 'lobby' && state.players.length < 2
+      ? 'Нужно минимум два игрока — отправь остальным ссылку ниже.'
       : info.text;
 
-    els.adminBar.classList.toggle('hidden', !state.you.isAdmin);
-    els.adminAction.textContent = info.action;
-    els.adminAction.disabled = state.phase === 'lobby' && state.players.length < 2;
+    show(els['admin-bar'], state.you.isAdmin);
+    els['admin-action'].textContent = info.action;
+    els['admin-action'].disabled = state.phase === 'lobby' && state.players.length < 2;
+
+    show(els['invite-block'], state.phase === 'lobby');
+    els['invite-link'].textContent = `${location.origin}/room/${state.code}`;
 
     renderPlayers(state);
+    renderPending(state);
     renderRounds(state);
     renderChampion(state);
   }
 
-  async function poll() {
+  /* ── Обмен с сервером ────────────────────────────── */
+
+  async function post(action, body, errorEl) {
     try {
-      const res = await fetch('/api/state', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Сервер недоступен');
-      render(await res.json());
-      showError('');
+      const res = await fetch(`${API}/${action}`, {
+        method: 'POST',
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Не получилось');
+      return data;
     } catch (err) {
-      showError(err.message);
+      setError(errorEl, err.message);
+      return null;
     }
   }
 
-  els.adminAction.addEventListener('click', async () => {
-    if (!latest) return;
-    const endpoint = latest.phase === 'finished' ? '/api/reset' : '/api/round';
-    els.adminAction.disabled = true;
-    showError('');
+  async function poll() {
     try {
-      const res = await fetch(endpoint, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Не получилось');
-      render(data);
+      const res = await fetch(API, { cache: 'no-store' });
+      if (res.status === 404) {
+        show(els.missing, true);
+        show(els['room-view'], false);
+        show(els['join-view'], false);
+        return;
+      }
+      if (!res.ok) throw new Error('Сервер недоступен');
+      render(await res.json());
+      setError(els.error, '');
     } catch (err) {
-      showError(err.message);
-      if (latest) render(latest);
+      setError(els.error, err.message);
     }
+  }
+
+  els['admin-action'].addEventListener('click', async () => {
+    if (!latest) return;
+    const action = { lobby: 'draw', draw: 'round', revealed: 'draw', finished: 'reset' }[latest.phase];
+    els['admin-action'].disabled = true;
+    setError(els.error, '');
+    const state = await post(action, null, els.error);
+    if (state) render(state);
+    else if (latest) render(latest);
   });
 
-  // Выдаёт новую куку: прежний игрок остаётся в игре, а мы заходим ещё раз.
-  els.switchUser.addEventListener('click', async () => {
+  els.copy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(els['invite-link'].textContent);
+      els.copy.textContent = 'Скопировано';
+    } catch {
+      // Буфер недоступен (например, по http не на localhost) — ссылка и так на виду.
+      els.copy.textContent = 'Скопируй вручную';
+    }
+    setTimeout(() => { els.copy.textContent = 'Скопировать'; }, 2000);
+  });
+
+  // Выдаёт новую куку: прежний игрок остаётся в комнате, а мы заходим ещё раз.
+  els['switch-user'].addEventListener('click', async () => {
     await fetch('/api/switch', { method: 'POST' });
-    location.href = '/';
+    location.reload();
   });
 
   poll();

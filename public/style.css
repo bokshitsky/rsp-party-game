@@ -312,6 +312,35 @@ input[type='text']:focus {
   color: var(--yellow);
 }
 
+/* Объявленная пара: имена есть, фигуры ещё закрыты */
+.pair {
+  border: 3px solid var(--ink);
+  margin-top: 14px;
+  padding: 18px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  background: var(--paper);
+}
+
+.pair-side {
+  font-size: 21px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pair-side:last-child { text-align: right; }
+
+.pair-vs {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 6px 10px;
+}
+
 .match {
   border: 3px solid var(--ink);
   margin-top: 14px;
@@ -438,6 +467,33 @@ input[type='text']:focus {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+/* Ссылка-приглашение */
+.invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.invite code {
+  flex: 1 1 260px;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  padding: 16px 18px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  display: flex;
+  align-items: center;
+  overflow-wrap: anywhere;
+}
+
+a.btn {
+  display: inline-block;
+  text-decoration: none;
 }
 
 .link-btn {
