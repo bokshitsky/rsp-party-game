@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Камень · Ножницы · Бумага</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <h1>
+        <span class="w-red">Камень</span>
+        <span class="w-blue">Ножницы</span>
+        <span class="w-yellow">Бумага</span>
+      </h1>
+      <div class="masthead-marks"><i></i><i></i><i></i></div>
+    </header>
+
+    <section class="block">
+      <div class="block-title">01 · Имя</div>
+      <input id="name" type="text" placeholder="Как тебя звать" maxlength="24" autocomplete="off">
+    </section>
+
+    <section class="block">
+      <div class="block-title">02 · Десять фигур подряд</div>
+      <div class="slots" id="slots"></div>
+      <div class="picker">
+        <button class="pick" data-move="rock" type="button">
+          <span class="shape shape-rock"></span>Камень
+        </button>
+        <button class="pick" data-move="paper" type="button">
+          <span class="shape shape-paper"></span>Бумага
+        </button>
+        <button class="pick" data-move="scissors" type="button">
+          <span class="shape-scissors-wrap"><span class="shape shape-scissors"></span></span>Ножницы
+        </button>
+      </div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn" id="undo" type="button">← Стереть</button>
+        <button class="btn" id="clear" type="button">Сбросить всё</button>
+        <button class="btn" id="random" type="button">Случайно</button>
+      </div>
+      <p class="hint" style="margin-top:16px">
+        Порядок важен: в паре сравнивается первая фигура с первой, вторая со второй и так далее.
+        Побеждает тот, чья фигура первой окажется сильнее. Одинаковые — идём дальше по списку.
+      </p>
+    </section>
+
+    <section class="block">
+      <button class="btn btn-primary" id="submit" type="button" disabled>Выбрал</button>
+      <div class="error hidden" id="error"></div>
+    </section>
+
+    <div class="footnote">
+      <span>Выбор нельзя поменять после отправки</span>
+      <span>Комната: /room</span>
+    </div>
+  </div>
+
+  <script src="/shapes.js"></script>
+  <script src="/join.js"></script>
+</body>
+</html>

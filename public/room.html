@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Комната · Камень Ножницы Бумага</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <h1>
+        <span class="w-red">Камень</span>
+        <span class="w-blue">Ножницы</span>
+        <span class="w-yellow">Бумага</span>
+      </h1>
+      <div class="masthead-marks"><i></i><i></i><i></i></div>
+    </header>
+
+    <section class="block" id="status-block">
+      <div class="block-title" id="status-title">Загрузка</div>
+      <p class="hint" id="status-text"></p>
+      <div class="btn-row hidden" id="admin-bar" style="margin-top:18px">
+        <button class="btn btn-primary" id="admin-action" type="button"></button>
+      </div>
+      <div class="error hidden" id="error"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-title">Участники · <span id="player-count">0</span></div>
+      <div class="players" id="players"></div>
+    </section>
+
+    <div id="rounds"></div>
+    <div id="champion"></div>
+
+    <div class="footnote">
+      <span>Обновление каждые 3 секунды</span>
+      <span id="me">—</span>
+    </div>
+  </div>
+
+  <script src="/shapes.js"></script>
+  <script src="/room.js"></script>
+</body>
+</html>

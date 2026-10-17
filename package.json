@@ -1,0 +1,11 @@
+{
+  "name": "rsp-party-game",
+  "version": "1.0.0",
+  "description": "Камень-ножницы-бумага для вечеринки: 10 заранее выбранных фигур, турнир на вылет",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "private": true,
+  "license": "MIT"
+}

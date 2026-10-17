@@ -1,0 +1,456 @@
+:root {
+  --red: #d8372b;
+  --blue: #1b4ea8;
+  --yellow: #f2c230;
+  --ink: #111111;
+  --paper: #f4f1ea;
+  --line: 4px solid var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Декоративная сетка на фоне — базовый мотив Баухауса */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(17, 17, 17, 0.05) 2px, transparent 2px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.05) 2px, transparent 2px);
+  background-size: 48px 48px;
+  z-index: 0;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+/* ── Шапка ─────────────────────────────────────────── */
+.masthead {
+  border: var(--line);
+  background: #fff;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: stretch;
+}
+
+.masthead h1 {
+  font-size: clamp(28px, 6vw, 56px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  padding: 20px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
+  align-items: baseline;
+}
+
+.masthead h1 span { white-space: nowrap; }
+.masthead h1 .w-red { color: var(--red); }
+.masthead h1 .w-blue { color: var(--blue); }
+.masthead h1 .w-yellow {
+  color: var(--yellow);
+  -webkit-text-stroke: 2px var(--ink);
+}
+
+.masthead-marks {
+  display: flex;
+  border-left: var(--line);
+}
+
+.masthead-marks i {
+  display: block;
+  width: 56px;
+}
+
+.masthead-marks i:nth-child(1) { background: var(--red); }
+.masthead-marks i:nth-child(2) { background: var(--blue); border-left: var(--line); }
+.masthead-marks i:nth-child(3) { background: var(--yellow); border-left: var(--line); }
+
+/* ── Блоки ─────────────────────────────────────────── */
+.block {
+  border: var(--line);
+  border-top: none;
+  background: #fff;
+  padding: 24px;
+}
+
+.block-title {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.block-title::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  background: var(--ink);
+  flex: none;
+}
+
+.hint {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  line-height: 1.6;
+  text-transform: none;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+/* ── Поля и кнопки ─────────────────────────────────── */
+input[type='text'] {
+  width: 100%;
+  border: var(--line);
+  background: var(--paper);
+  padding: 16px 18px;
+  font: inherit;
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+input[type='text']:focus {
+  outline: none;
+  background: var(--yellow);
+}
+
+.btn {
+  border: var(--line);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  padding: 16px 26px;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+
+.btn:hover:not(:disabled) { background: var(--yellow); }
+.btn:active:not(:disabled) { transform: translate(2px, 2px); }
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.btn-primary {
+  background: var(--red);
+  color: #fff;
+  font-size: 20px;
+  padding: 20px 34px;
+  width: 100%;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--yellow);
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ── Фигуры ────────────────────────────────────────── */
+.shape {
+  flex: none;
+  border: 3px solid var(--ink);
+}
+
+.shape-rock {
+  background: var(--red);
+  border-radius: 50%;
+}
+
+.shape-paper {
+  background: var(--blue);
+}
+
+.shape-scissors {
+  background: var(--yellow);
+  border: none;
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+/* Треугольнику clip-path съедает рамку — рисуем её подложкой */
+.shape-scissors-wrap {
+  flex: none;
+  background: var(--ink);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  padding: 3px;
+  display: grid;
+}
+
+/* ── Выбор фигур ───────────────────────────────────── */
+.picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.pick {
+  border: var(--line);
+  background: #fff;
+  cursor: pointer;
+  padding: 22px 12px 16px;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+
+.pick:hover:not(:disabled) { background: var(--paper); }
+.pick:active:not(:disabled) { transform: translate(2px, 2px); }
+.pick:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.pick .shape,
+.pick .shape-scissors-wrap { width: 68px; height: 68px; }
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.slot {
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.slot.empty::after {
+  content: attr(data-index);
+  font-size: 13px;
+  opacity: 0.3;
+}
+
+.slot .shape,
+.slot .shape-scissors-wrap {
+  width: 70%;
+  height: 70%;
+}
+
+.slot .shape { border-width: 2px; }
+.slot .shape-scissors-wrap { padding: 2px; }
+
+/* ── Игроки ────────────────────────────────────────── */
+.players {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.player {
+  border: 3px solid var(--ink);
+  padding: 14px 16px;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--paper);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player i {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  background: var(--blue);
+}
+
+.player.is-you {
+  background: var(--yellow);
+}
+
+.player.is-admin i {
+  background: var(--red);
+  border-radius: 50%;
+}
+
+/* ── Раунды и пары ─────────────────────────────────── */
+.round-label {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 12px 20px;
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.round-label em {
+  font-style: normal;
+  color: var(--yellow);
+}
+
+.match {
+  border: 3px solid var(--ink);
+  margin-top: 14px;
+  display: grid;
+}
+
+.side {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+}
+
+.side + .side { border-top: 3px solid var(--ink); }
+
+.side.won {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.side-name {
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.side.won .side-name::after {
+  content: '★';
+  color: var(--yellow);
+  font-size: 22px;
+}
+
+.strip {
+  display: flex;
+  gap: 6px;
+}
+
+.cell {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.cell .shape,
+.cell .shape-scissors-wrap {
+  width: 100%;
+  height: 100%;
+}
+
+.cell .shape { border-width: 2px; }
+.cell .shape-scissors-wrap { padding: 2px; }
+
+.cell.after { opacity: 0.22; }
+
+.cell.decider::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 3px solid var(--red);
+}
+
+.side.won .cell.decider::after { border-color: var(--yellow); }
+
+.bye {
+  border: 3px dashed var(--ink);
+  margin-top: 14px;
+  padding: 14px 16px;
+  font-size: 15px;
+  background: var(--paper);
+}
+
+/* ── Победитель ────────────────────────────────────── */
+.champion {
+  border: var(--line);
+  border-top: none;
+  background: var(--red);
+  color: #fff;
+  padding: 36px 24px;
+  text-align: center;
+}
+
+.champion small {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  margin-bottom: 14px;
+}
+
+.champion strong {
+  font-size: clamp(32px, 9vw, 72px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  -webkit-text-stroke: 2px var(--ink);
+}
+
+/* ── Служебное ─────────────────────────────────────── */
+.error {
+  border: var(--line);
+  background: var(--red);
+  color: #fff;
+  padding: 14px 18px;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.footnote {
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  opacity: 0.55;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 720px) {
+  .masthead { grid-template-columns: 1fr; }
+  .masthead-marks { border-left: none; border-top: var(--line); }
+  .masthead-marks i { width: auto; flex: 1; height: 28px; }
+  .pick .shape, .pick .shape-scissors-wrap { width: 44px; height: 44px; }
+  .slots { gap: 5px; }
+  .side { grid-template-columns: 1fr; gap: 10px; }
+  .cell { width: 24px; height: 24px; }
+  .strip { gap: 4px; }
+}
