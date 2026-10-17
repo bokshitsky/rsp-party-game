@@ -36,3 +36,6 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# Адрес сервера для выкатки — не в репозиторий
+.deploy-host
