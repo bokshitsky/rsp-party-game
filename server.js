@@ -3,10 +3,13 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const game = require('./game');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const COOKIE_NAME = 'rsp_sid';
+const COOKIE_MAX_AGE = 12 * 60 * 60; // 12 часов — на один вечер хватает
 
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -15,13 +18,36 @@ const CONTENT_TYPES = {
   '.svg': 'image/svg+xml',
 };
 
+function parseCookies(header) {
+  const jar = {};
+  for (const part of String(header || '').split(';')) {
+    const eq = part.indexOf('=');
+    if (eq < 0) continue;
+    jar[part.slice(0, eq).trim()] = part.slice(eq + 1).trim();
+  }
+  return jar;
+}
+
+function issueSession(res) {
+  const sid = crypto.randomBytes(16).toString('hex');
+  // HttpOnly: личность живёт только на сервере, подменить её из консоли нельзя.
+  res.setHeader('Set-Cookie',
+    `${COOKIE_NAME}=${sid}; Path=/; Max-Age=${COOKIE_MAX_AGE}; SameSite=Lax; HttpOnly`);
+  return sid;
+}
+
+// Личность игрока — случайный идентификатор в куке, а не присланное имя.
+function sessionId(req, res) {
+  const existing = parseCookies(req.headers.cookie)[COOKIE_NAME];
+  return /^[a-f0-9]{32}$/.test(existing || '') ? existing : issueSession(res);
+}
+
 function sendJson(res, status, payload) {
-  const body = JSON.stringify(payload);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
   });
-  res.end(body);
+  res.end(JSON.stringify(payload));
 }
 
 function readBody(req) {
@@ -65,9 +91,9 @@ function serveFile(res, filePath) {
   });
 }
 
-async function handleApi(req, res, url) {
+async function handleApi(req, res, url, sid) {
   if (url.pathname === '/api/state' && req.method === 'GET') {
-    return sendJson(res, 200, game.publicState(url.searchParams.get('name')));
+    return sendJson(res, 200, game.publicState(sid));
   }
 
   if (req.method !== 'POST') throw Object.assign(new Error('Метод не поддержан'), { status: 405 });
@@ -75,16 +101,22 @@ async function handleApi(req, res, url) {
 
   switch (url.pathname) {
     case '/api/join': {
-      const name = game.join(body.name, body.moves);
+      const name = game.join(sid, body.name, body.moves);
       return sendJson(res, 200, { name });
     }
     case '/api/round': {
-      game.startRound(body.name);
-      return sendJson(res, 200, game.publicState(body.name));
+      game.startRound(sid);
+      return sendJson(res, 200, game.publicState(sid));
     }
     case '/api/reset': {
-      game.reset(body.name);
-      return sendJson(res, 200, game.publicState(body.name));
+      game.reset(sid);
+      return sendJson(res, 200, game.publicState(sid));
+    }
+    case '/api/switch': {
+      // Новая кука = чистая личность. Прежний игрок остаётся в игре —
+      // так из одного браузера можно завести ещё одного участника.
+      issueSession(res);
+      return sendJson(res, 200, { ok: true });
     }
     default:
       throw Object.assign(new Error('Не найдено'), { status: 404 });
@@ -93,10 +125,11 @@ async function handleApi(req, res, url) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const sid = sessionId(req, res);
 
   if (url.pathname.startsWith('/api/')) {
     try {
-      await handleApi(req, res, url);
+      await handleApi(req, res, url, sid);
     } catch (err) {
       sendJson(res, err.status || 500, { error: err.message || 'Внутренняя ошибка' });
     }

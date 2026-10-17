@@ -9,9 +9,10 @@ const ADMIN_NAME = 'boksh';
 const MAX_NAME_LENGTH = 24;
 
 // Всё состояние живёт в памяти процесса: перезапуск сервера = новая игра.
+// Ключ игрока — случайный идентификатор из куки, а не имя.
 const state = {
   phase: 'lobby', // lobby | playing | finished
-  players: new Map(), // ключ в нижнем регистре -> { name, moves, hash }
+  players: new Map(), // sid -> { name, moves, hash }
   rounds: [], // [{ number, matches, bye }]
   champion: null,
 };
@@ -22,12 +23,13 @@ function fail(status, message) {
   return err;
 }
 
-function key(name) {
-  return String(name || '').trim().toLowerCase();
+function byName(name) {
+  const lower = String(name).toLowerCase();
+  return [...state.players.values()].find((player) => player.name.toLowerCase() === lower);
 }
 
-function isAdmin(name) {
-  return key(name) === ADMIN_NAME;
+function isAdmin(sid) {
+  return state.players.get(sid)?.name.toLowerCase() === ADMIN_NAME;
 }
 
 // Отпечаток игрока: имя + его выборы. От него зависит порядок в сетке,
@@ -36,8 +38,9 @@ function fingerprint(name, moves) {
   return crypto.createHash('sha256').update(`${name}|${moves.join(',')}`).digest('hex');
 }
 
-function join(rawName, moves) {
+function join(sid, rawName, moves) {
   if (state.phase !== 'lobby') throw fail(409, 'Игра уже началась');
+  if (state.players.has(sid)) throw fail(409, 'Ты уже в игре');
 
   const name = String(rawName || '').trim().slice(0, MAX_NAME_LENGTH);
   if (!name) throw fail(400, 'Введите имя');
@@ -45,9 +48,9 @@ function join(rawName, moves) {
     throw fail(400, `Нужно выбрать ровно ${MOVE_COUNT} фигур`);
   }
   if (!moves.every((move) => MOVES.includes(move))) throw fail(400, 'Недопустимая фигура');
-  if (state.players.has(key(name))) throw fail(409, 'Это имя уже занято');
+  if (byName(name)) throw fail(409, 'Это имя уже занято');
 
-  state.players.set(key(name), { name, moves: moves.slice(), hash: fingerprint(name, moves) });
+  state.players.set(sid, { name, moves: moves.slice(), hash: fingerprint(name, moves) });
   return name;
 }
 
@@ -69,9 +72,9 @@ function duel(a, b) {
     }
   }
 
-  // Все десять совпали — разводим по отпечатку, чтобы исход остался предсказуемым.
+  // Все десять фигур совпали — бросаем монетку.
   const tiebreak = winner === null;
-  if (tiebreak) winner = a.hash < b.hash ? a : b;
+  if (tiebreak) winner = Math.random() < 0.5 ? a : b;
 
   return { steps, winner: winner.name, decidedAt, tiebreak };
 }
@@ -79,11 +82,11 @@ function duel(a, b) {
 function advancing(round) {
   const names = round.matches.map((match) => match.winner);
   if (round.bye) names.push(round.bye);
-  return names.map((name) => state.players.get(key(name)));
+  return names.map(byName);
 }
 
-function startRound(byName) {
-  if (!isAdmin(byName)) throw fail(403, 'Раунды запускает только админ');
+function startRound(sid) {
+  if (!isAdmin(sid)) throw fail(403, 'Раунды запускает только админ');
   if (state.phase === 'finished') throw fail(409, 'Игра уже завершена');
 
   let contenders;
@@ -112,36 +115,37 @@ function startRound(byName) {
   const round = { number: state.rounds.length + 1, matches, bye };
   state.rounds.push(round);
 
-  if (advancing(round).length === 1) {
-    state.champion = advancing(round)[0].name;
+  const next = advancing(round);
+  if (next.length === 1) {
+    state.champion = next[0].name;
     state.phase = 'finished';
   }
 
   return round;
 }
 
-function reset(byName) {
-  if (!isAdmin(byName)) throw fail(403, 'Сбросить игру может только админ');
+function reset(sid) {
+  if (!isAdmin(sid)) throw fail(403, 'Сбросить игру может только админ');
   state.phase = 'lobby';
   state.players.clear();
   state.rounds = [];
   state.champion = null;
 }
 
-function publicState(viewerName) {
-  const viewerKey = key(viewerName);
+function publicState(sid) {
+  const me = state.players.get(sid);
   return {
     phase: state.phase,
     adminName: ADMIN_NAME,
     moveCount: MOVE_COUNT,
     players: [...state.players.values()].map((player) => player.name),
-    // Чужие фигуры показываем только внутри уже сыгранных пар — до этого они секрет.
+    // Чужие фигуры видны только внутри уже сыгранных пар — до этого они секрет.
     rounds: state.rounds,
     champion: state.champion,
     you: {
-      name: state.players.get(viewerKey)?.name || null,
-      joined: state.players.has(viewerKey),
-      isAdmin: isAdmin(viewerName),
+      name: me?.name || null,
+      joined: Boolean(me),
+      isAdmin: isAdmin(sid),
     },
   };
 }

@@ -389,6 +389,14 @@ input[type='text']:focus {
 
 .side.won .cell.decider::after { border-color: var(--yellow); }
 
+.match-note {
+  border-top: 3px solid var(--ink);
+  background: var(--yellow);
+  padding: 8px 16px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
 .bye {
   border: 3px dashed var(--ink);
   margin-top: 14px;
@@ -441,6 +449,21 @@ input[type='text']:focus {
   gap: 16px;
   flex-wrap: wrap;
 }
+
+.link-btn {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link-btn:hover { color: var(--red); }
 
 .hidden { display: none !important; }
 

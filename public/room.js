@@ -3,7 +3,6 @@
 (function () {
   const { shapeHtml, escapeHtml, LABELS } = window.RSP;
   const POLL_MS = 3000;
-  const myName = localStorage.getItem('rsp-name') || '';
 
   const els = {
     statusTitle: document.getElementById('status-title'),
@@ -16,11 +15,10 @@
     rounds: document.getElementById('rounds'),
     champion: document.getElementById('champion'),
     me: document.getElementById('me'),
+    switchUser: document.getElementById('switch-user'),
   };
 
   let latest = null;
-
-  els.me.textContent = myName ? `Ты: ${myName}` : 'Наблюдатель';
 
   function showError(message) {
     els.error.textContent = message || '';
@@ -44,6 +42,15 @@
       action: 'Новая игра',
     },
   };
+
+  function plural(count, one, few, many) {
+    const mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 14) return many;
+    const mod10 = count % 10;
+    if (mod10 === 1) return one;
+    if (mod10 >= 2 && mod10 <= 4) return few;
+    return many;
+  }
 
   function renderPlayers(state) {
     els.playerCount.textContent = state.players.length;
@@ -76,18 +83,9 @@
         <div class="strip">${renderStrip(match.steps, key, match.decidedAt)}</div>
       </div>`;
     const note = match.tiebreak
-      ? '<div class="bye" style="margin:0;border-top:0;border-left:0;border-right:0;border-bottom:0;padding:8px 16px">Все десять фигур совпали — решил отпечаток выбора</div>'
+      ? '<div class="match-note">Все десять фигур совпали — победителя выбрала монетка</div>'
       : '';
     return `<div class="match">${sideHtml(match.a, 'a')}${sideHtml(match.b, 'b')}${note}</div>`;
-  }
-
-  function plural(count, one, few, many) {
-    const mod100 = count % 100;
-    if (mod100 >= 11 && mod100 <= 14) return many;
-    const mod10 = count % 10;
-    if (mod10 === 1) return one;
-    if (mod10 >= 2 && mod10 <= 4) return few;
-    return many;
   }
 
   function renderRounds(state) {
@@ -96,11 +94,12 @@
       const bye = round.bye
         ? `<div class="bye">${escapeHtml(round.bye)} — проходит без боя</div>`
         : '';
+      const count = round.matches.length;
       return `
         <section class="block">
           <div class="round-label">
             <span>Раунд ${round.number}</span>
-            <em>${round.matches.length} ${plural(round.matches.length, 'пара', 'пары', 'пар')}${round.bye ? ' + 1 без боя' : ''}</em>
+            <em>${count} ${plural(count, 'пара', 'пары', 'пар')}${round.bye ? ' + 1 без боя' : ''}</em>
           </div>
           ${matches}${bye}
         </section>`;
@@ -116,14 +115,17 @@
   function render(state) {
     latest = state;
 
-    // Админ сбросил игру — наше имя больше не числится, уходим выбирать заново.
-    if (state.phase === 'lobby' && myName && !state.you.joined) {
-      localStorage.removeItem('rsp-name');
+    // Нас тут нет: либо админ сбросил игру, либо мы сменили личность.
+    if (state.phase === 'lobby' && !state.you.joined) {
       location.replace('/');
       return;
     }
 
     const info = STATUS[state.phase];
+
+    els.me.textContent = state.you.name
+      ? `Ты: ${state.you.name}${state.you.isAdmin ? ' · админ' : ''}`
+      : 'Наблюдатель';
 
     els.statusTitle.textContent = info.title;
     els.statusText.textContent = state.phase === 'lobby' && state.players.length < 2
@@ -141,9 +143,10 @@
 
   async function poll() {
     try {
-      const res = await fetch(`/api/state?name=${encodeURIComponent(myName)}`, { cache: 'no-store' });
+      const res = await fetch('/api/state', { cache: 'no-store' });
       if (!res.ok) throw new Error('Сервер недоступен');
       render(await res.json());
+      showError('');
     } catch (err) {
       showError(err.message);
     }
@@ -155,23 +158,20 @@
     els.adminAction.disabled = true;
     showError('');
     try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: myName }),
-      });
+      const res = await fetch(endpoint, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Не получилось');
-      if (endpoint === '/api/reset') {
-        localStorage.removeItem('rsp-name');
-        location.href = '/';
-        return;
-      }
       render(data);
     } catch (err) {
       showError(err.message);
       if (latest) render(latest);
     }
+  });
+
+  // Выдаёт новую куку: прежний игрок остаётся в игре, а мы заходим ещё раз.
+  els.switchUser.addEventListener('click', async () => {
+    await fetch('/api/switch', { method: 'POST' });
+    location.href = '/';
   });
 
   poll();

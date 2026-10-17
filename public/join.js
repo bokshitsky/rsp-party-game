@@ -16,14 +16,8 @@
 
   let chosen = [];
 
-  // Уже отправлял выбор в этой сессии — сразу в комнату.
-  if (localStorage.getItem('rsp-name')) {
-    location.replace('/room');
-    return;
-  }
-
   function showError(message) {
-    els.error.textContent = message;
+    els.error.textContent = message || '';
     els.error.classList.toggle('hidden', !message);
   }
 
@@ -71,13 +65,23 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Не получилось войти');
-      localStorage.setItem('rsp-name', data.name);
       location.href = '/room';
     } catch (err) {
       showError(err.message);
       render();
     }
   });
+
+  // Эта кука уже привязана к игроку — сразу в комнату.
+  (async function checkSession() {
+    try {
+      const res = await fetch('/api/state', { cache: 'no-store' });
+      const state = await res.json();
+      if (state.you && state.you.joined) location.replace('/room');
+    } catch {
+      // Сервер не ответил — просто остаёмся на экране выбора.
+    }
+  })();
 
   render();
 })();
