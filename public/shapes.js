@@ -4,11 +4,13 @@ window.RSP = (function () {
 
   const LABELS = { rock: 'Камень', paper: 'Бумага', scissors: 'Ножницы' };
 
+  // Треугольнику нужна настоящая обводка, поэтому он SVG, а не div с clip-path:
+  // так он одинаково выглядит и крупной кнопкой, и мелкой иконкой в паре.
+  const TRIANGLE = '<svg class="shape shape-scissors" viewBox="0 0 100 100"'
+    + ' preserveAspectRatio="none" aria-hidden="true"><polygon points="50,7 95,93 5,93"/></svg>';
+
   function shapeHtml(move) {
-    if (move === 'scissors') {
-      return '<span class="shape-scissors-wrap"><span class="shape shape-scissors"></span></span>';
-    }
-    return `<span class="shape shape-${move}"></span>`;
+    return move === 'scissors' ? TRIANGLE : `<span class="shape shape-${move}"></span>`;
   }
 
   function escapeHtml(text) {
@@ -17,5 +19,5 @@ window.RSP = (function () {
     })[ch]);
   }
 
-  return { LABELS, shapeHtml, escapeHtml };
+  return { LABELS, TRIANGLE, shapeHtml, escapeHtml };
 })();

@@ -193,18 +193,15 @@ input[type='text']:focus {
 }
 
 .shape-scissors {
-  background: var(--yellow);
   border: none;
-  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  overflow: visible;
 }
 
-/* Треугольнику clip-path съедает рамку — рисуем её подложкой */
-.shape-scissors-wrap {
-  flex: none;
-  background: var(--ink);
-  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
-  padding: 3px;
-  display: grid;
+.shape-scissors polygon {
+  fill: var(--yellow);
+  stroke: var(--ink);
+  stroke-width: 7;
+  stroke-linejoin: round;
 }
 
 /* ── Выбор фигур ───────────────────────────────────── */
@@ -232,8 +229,7 @@ input[type='text']:focus {
 .pick:active:not(:disabled) { transform: translate(2px, 2px); }
 .pick:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.pick .shape,
-.pick .shape-scissors-wrap { width: 68px; height: 68px; }
+.pick .shape { width: 68px; height: 68px; }
 
 .slots {
   display: grid;
@@ -257,14 +253,11 @@ input[type='text']:focus {
   opacity: 0.3;
 }
 
-.slot .shape,
-.slot .shape-scissors-wrap {
+.slot .shape {
   width: 70%;
   height: 70%;
+  border-width: 2px;
 }
-
-.slot .shape { border-width: 2px; }
-.slot .shape-scissors-wrap { padding: 2px; }
 
 /* ── Игроки ────────────────────────────────────────── */
 .players {
@@ -369,14 +362,11 @@ input[type='text']:focus {
   position: relative;
 }
 
-.cell .shape,
-.cell .shape-scissors-wrap {
+.cell .shape {
   width: 100%;
   height: 100%;
+  border-width: 2px;
 }
-
-.cell .shape { border-width: 2px; }
-.cell .shape-scissors-wrap { padding: 2px; }
 
 .cell.after { opacity: 0.22; }
 
@@ -471,7 +461,7 @@ input[type='text']:focus {
   .masthead { grid-template-columns: 1fr; }
   .masthead-marks { border-left: none; border-top: var(--line); }
   .masthead-marks i { width: auto; flex: 1; height: 28px; }
-  .pick .shape, .pick .shape-scissors-wrap { width: 44px; height: 44px; }
+  .pick .shape { width: 44px; height: 44px; }
   .slots { gap: 5px; }
   .side { grid-template-columns: 1fr; gap: 10px; }
   .cell { width: 24px; height: 24px; }
